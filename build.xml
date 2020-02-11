@@ -1,0 +1,150 @@
+<?xml version="1.0" ?>
+
+<!-- Colin Kelleher -->
+<!-- 117303363 -->
+<!-- Ant - Assignment 3 -->
+
+<!--Project name and default target-->
+<project name="Lab-3" default="main" >
+
+<!-- Messages for each process being carried out -->
+    <property name="message" value="Building the .jar file." />
+    <property name="message1" value="Making directories." />
+    <property name="message2" value="Compiling files" />
+    <property name="message3" value="Compressing files" />
+    <property name="message4" value="Cleaning" />
+    <property name="message5" value="Running Junit unit tests" />
+    <property name="message6" value="Deploying" />
+    <property name="message7" value="Building the Builder Application" />
+
+
+<!-- Directories-->
+    <property name="java-dir" value="src" description="jar directory"/>
+    <property name="jar-dir" value="jar-dir" description="java directory"/>
+    <property name="txt-dir" value="txt-dir" description="text directory"/>
+    <property name="doc-dir" value="doc-dir" description="documentation directory"/>
+    <property name="class-dir" value="classes" description="class directory"/>
+    <property name="deploy-dir" value="deployed" description="deploy directory"/>
+    <property name="test" value="test" description="test directory"/>
+    <property name="compiled-test" value="compiled-test" description="compiled test directory"/>
+    <property name="PASSWORD" value="***********" description="ssh password"/>
+    <property name="USERNAME" value="*****" description="username"/>
+    <property name="PATH1" value="****************" description="path"/>
+
+<!-- Main Target -->
+    <target name="main" depends="javadoc,compress,clean">
+        <echo>
+            ${message7}
+        </echo>
+    </target>
+
+<!-- Generating the appropriate directories for compiling, compressing, documentation
+    deployment -->
+    <target name="make-directories">
+        <echo>
+            ${message1}
+        </echo>
+        <mkdir dir="${doc-dir}"/>
+        <mkdir dir="${class-dir}"/>
+        <mkdir dir="${compiled-test}"/>
+        <mkdir dir="${jar-dir}"/>
+    </target>
+
+
+<!--Running JUnit tests on builder class
+    Showing the number of tests run, the failures, errors, etc... -->
+    <target name="junit">
+    <!--Printing message as to what is happening at this stage-->
+        <echo>
+            ${message5}
+        </echo>
+        <!--This is halt the build if the junit fails-->
+        <junit haltonfailure="true"
+               printsummary="yes"
+               showoutput="true">
+            <classpath>
+                <pathelement path="${compiled-test}"/>
+                <pathelement path="${class-dir}"/>
+            </classpath>
+            <batchtest>
+                <fileset dir="${compiled-test}">
+                    <include name="*test*.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+<!-- Compiling the project into appropriate directories
+        main Java files compiled into class-dir
+        test files compiled into compiled-test-->
+    <target name="compile" depends="make-directories">
+        <echo>
+            ${message2}
+        </echo>
+        <!--Compiling files into a destination directory-->
+        <javac srcdir="${java-dir}"
+               destdir="${class-dir}" includeantruntime="true"/>
+        <javac srcdir="${test}"
+               destdir="${compiled-test}" classpath="${class-dir}" includeantruntime="true"/>
+    </target>
+
+<!-- Compressing into a jar file -->
+    <target name="compress" depends="junit">
+        <echo>
+            ${message}
+        </echo>
+        <jar jarfile="${jar-dir}/Main.jar"
+             manifest="${txt-dir}/manifest.txt"
+             basedir ="${class-dir}"/>
+    </target>
+
+<!-- Generating the project documentation - the Javadoc -->
+    <target name="javadoc" depends="compile" >
+        <echo>
+            Generating Javadoc
+        </echo>
+        <!--Generating Javadoc into a destination directory-->
+        <javadoc source="." destdir="doc-dir" >
+            <fileset dir="src">
+                <include name="**/*.java"/>
+            </fileset>
+        </javadoc>
+    </target>
+
+<!--Cleaning the directories and files that were generated -->
+    <target name="clean" depends="deploy">
+        <echo>
+            ${message4}
+        </echo>
+        <delete dir="${doc-dir}"/>
+        <delete dir="${jar-dir}"/>
+        <delete dir="${class-dir}"/>
+        <delete dir="${compiled-test}"/>
+    </target>
+
+
+<!-- Deployment -->
+    <target name="deploy" depends="ssh_make">
+        <echo>
+            ${message6}
+        </echo>
+        <scp password="${PASSWORD}"
+             trust="yes"
+             remotetodir="${USERNAME}@csgate.ucc.ie:~/Desktop/Lab-3/deploy"
+             file="jar-dir/Main.jar" />
+        <scp password="${PASSWORD}"
+             trust="yes"
+             remotetodir="${USERNAME}@csgate.ucc.ie:~/Desktop/Lab-3/deploy/documentation">
+             <fileset dir="doc-dir" />
+        </scp>
+
+    </target>
+
+    <target name="ssh_make">
+        <sshexec host="csgate.ucc.ie"
+                 trust="yes"
+                 username="${USERNAME}"
+                 password="${PASSWORD}"
+                 command="mkdir ${PATH1}/deploy ${PATH1}/deploy/documentation " failonerror="false"/>
+    </target>
+</project>
